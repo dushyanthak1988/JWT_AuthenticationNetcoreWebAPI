@@ -1,8 +1,6 @@
-﻿using JWT_AuthenticationNetcoreWebAPI.Cache;
-using JWT_AuthenticationNetcoreWebAPI.Data;
+﻿using JWT_AuthenticationNetcoreWebAPI.Data;
 using JWT_AuthenticationNetcoreWebAPI.Model;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,28 +11,25 @@ namespace JWT_AuthenticationNetcoreWebAPI.Controllers
     public class ProductController : ControllerBase
     {
         private readonly DbContextClass _context;
-        private readonly ICacheService _cacheService;
-        public ProductController(DbContextClass context, ICacheService cacheService)
+        public ProductController(DbContextClass context)
         {
             _context = context;
-            _cacheService = cacheService;
+
         }
         [HttpGet]
         [Route("ProductsList")]
         public async Task<ActionResult<IEnumerable<Product>>> Get()
         {
             var productCache = new List<Product>();
-            productCache = _cacheService.GetData<List<Product>>("Product");
-            if (productCache == null)
+
+            var product = await _context.Products.ToListAsync();
+            if (product.Count > 0)
             {
-                var product = await _context.Products.ToListAsync();
-                if (product.Count > 0)
-                {
-                    productCache = product;
-                    var expirationTime = DateTimeOffset.Now.AddMinutes(3.0);
-                    _cacheService.SetData("Product", productCache, expirationTime);
-                }
+                productCache = product;
+                var expirationTime = DateTimeOffset.Now.AddMinutes(3.0);
+                //  _cacheService.SetData("Product", productCache, expirationTime);
             }
+
             return productCache;
         }
         [HttpGet]
@@ -42,13 +37,9 @@ namespace JWT_AuthenticationNetcoreWebAPI.Controllers
         public async Task<ActionResult<Product>> Get(int id)
         {
             var productCache = new Product();
-            var productCacheList = new List<Product>();
-            productCacheList = _cacheService.GetData<List<Product>>("Product");
-            productCache = productCacheList.Find(x => x.ProductId == id);
-            if (productCache == null)
-            {
-                productCache = await _context.Products.FindAsync(id);
-            }
+
+            productCache = await _context.Products.FindAsync(id);
+
             return productCache;
         }
         [HttpPost]
@@ -57,7 +48,6 @@ namespace JWT_AuthenticationNetcoreWebAPI.Controllers
         {
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
-            _cacheService.RemoveData("Product");
             return CreatedAtAction(nameof(Get), new
             {
                 id = product.ProductId
@@ -73,7 +63,6 @@ namespace JWT_AuthenticationNetcoreWebAPI.Controllers
                 return NotFound();
             }
             _context.Products.Remove(product);
-            _cacheService.RemoveData("Product");
             await _context.SaveChangesAsync();
             return await _context.Products.ToListAsync();
         }
@@ -94,7 +83,6 @@ namespace JWT_AuthenticationNetcoreWebAPI.Controllers
             productData.ProductDescription = product.ProductDescription;
             productData.ProductName = product.ProductName;
             productData.ProductStock = product.ProductStock;
-            _cacheService.RemoveData("Product");
             await _context.SaveChangesAsync();
             return await _context.Products.ToListAsync();
         }

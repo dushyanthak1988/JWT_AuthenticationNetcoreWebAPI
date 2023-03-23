@@ -1,4 +1,3 @@
-using JWT_AuthenticationNetcoreWebAPI.Cache;
 using JWT_AuthenticationNetcoreWebAPI.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -38,8 +37,7 @@ builder.Services.AddSwaggerGen(options => {
             new List < string > ()
         }
     });
-});
-builder.Services.AddScoped<ICacheService, CacheService>();
+}); 
 builder.Services.AddDbContext<DbContextClass>();
 builder.Services.AddAuthentication(opt => {
     opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
